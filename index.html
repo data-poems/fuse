@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FUSE - Global Temperature Anomalies</title>
+  <meta name="description" content="Interactive visualization of NASA GISTEMP global temperature anomaly data from 1880-2025">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:title" content="FUSE - Global Temperature Anomalies">
+  <meta property="og:description" content="140+ years of climate anomalies as a particle system. NASA GISTEMP data from 1880-2025.">
+  <meta property="og:image" content="https://dr.eamer.dev/datavis/poems/fuse/social-card.png">
+  <meta property="og:url" content="https://dr.eamer.dev/datavis/poems/fuse/">
+  <meta property="og:type" content="website">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FUSE - Global Temperature Anomalies">
+  <meta name="twitter:description" content="140+ years of climate anomalies as a particle system. NASA GISTEMP data from 1880-2025.">
+  <meta name="twitter:image" content="https://dr.eamer.dev/datavis/poems/fuse/social-card.png">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  background: #000;
+  font-family: "Helvetica Neue", sans-serif;
+  color: #fff;
+  min-height: 100vh;
+  overflow: hidden;
+}
+canvas {
+  position: fixed;
+  inset: 0;
+}
+a {
+  color: #0cf;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 204, 255, 0.3);
+  transition: border-color 0.2s;
+}
+a:hover {
+  border-color: #0cf;
+}
+
+.ui {
+  position: relative;
+  z-index: 10;
+  pointer-events: none; /* Let clicks pass through to canvas */
+}
+
+/* Header */
+.header {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+}
+h1 {
+  font-size: 1.2rem;
+  font-weight: 300;
+  letter-spacing: 0.3em;
+  color: #fff;
+  text-transform: uppercase;
+}
+.subtitle {
+  font-size: 0.65rem;
+  color: #888; /* Lighter subtitle */
+  margin-top: 0.5rem;
+  letter-spacing: 0.2em;
+}
+
+/* MAIN DISPLAY */
+.year-display {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -70%); /* Sits on top of axis */
+  text-align: center;
+  z-index: 20;
+  mix-blend-mode: screen;
+  transition: text-shadow 0.2s;
+}
+
+.month-value {
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: 0.5em;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  margin-right: -0.5em; /* Fix centering */
+    opacity: 0.25;
+}
+
+.year-value {
+  font-size: 10rem;
+  font-weight: 800;
+  letter-spacing: -5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+/*   filter: blur(0.2px); */
+  opacity: 0.25;
+  color: #fff;
+}
+
+/* Temp Display */
+.temp-display {
+  position: fixed;
+  bottom: 5rem; /* Moved up slightly to make room for slider */
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+}
+.temp-value {
+  font-size: 1.5rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.2s, text-shadow 0.2s; /* Smooth color transition */
+}
+
+/* Live Indicator */
+.live-indicator {
+  position: fixed;
+  bottom: 2rem;
+  left: 2rem;
+  font-family: "Courier New", monospace;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.6); /* Lighter */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #444;
+  border-radius: 50%;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+/* --- SPEED CONTROL (Subtle Bottom) --- */
+.speed-control {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  opacity: 0.65; /* Reduced visibility */
+  transition: opacity 0.5s;
+  pointer-events: auto; /* Enable interaction */
+}
+.speed-control:hover {
+  opacity: 1; /* Fully visible on hover */
+}
+.slider-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.slider-wrapper label {
+  font-size: 0.7rem; /* Slightly larger */
+  letter-spacing: 0.2em;
+  color: #bbb; /* Lighter color */
+}
+input[type=range] {
+  width: 200px;
+  height: 2px;
+  background: #666; /* Lighter track */
+  appearance: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* --- CONTROL BUTTONS (PLAY/PAUSE & RESET) --- */
+.control-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #bbb;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 8px;
+  transition: all 0.2s;
+  pointer-events: auto;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #bbb;
+  color: #fff;
+}
+
+/* --- INFO BUTTON --- */
+.info-btn {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #444;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  font-family: "Courier New", monospace;
+  font-size: 1.2rem;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.2s;
+  z-index: 50;
+}
+.info-btn:hover {
+  border-color: #fff;
+  background: rgba(255,255,255,0.1);
+}
+
+/* --- MODAL --- */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(5px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s;
+  pointer-events: auto;
+}
+.modal.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.modal-content {
+  background: #111;
+  border: 1px solid #333;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  border-radius: 4px;
+  position: relative;
+  box-shadow: 0 0 30px rgba(0,0,0,0.8);
+}
+.modal-content h2 {
+  font-weight: 300;
+  margin-bottom: 1rem;
+  letter-spacing: 0.1em;
+  color: #fff;
+}
+.modal-content p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #ccc; /* Lighter modal text */
+  margin-bottom: 1rem;
+}
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.close-btn:hover {
+  color: #fff;
+}
+
+/* --- MOBILE LAYOUT --- */
+@media (max-width: 768px) {
+  .speed-control {
+    bottom: 1rem;
+    left: auto;
+    right: 1rem;
+    transform: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  #resetBtn {
+    order: 1;
+  }
+
+  #playPauseBtn {
+    order: 2;
+  }
+
+  .slider-wrapper {
+    order: 3;
+    flex-direction: row;
+    gap: 0.75rem;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .slider-wrapper label {
+    font-size: 0.65rem;
+  }
+
+  input[type=range] {
+    width: 120px;
+  }
+
+  .control-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="ui">
+  <div class="header">
+    <h1>FUSE</h1>
+    <div class="subtitle">Global Temperature Anomalies 1880-2025</div>
+  </div>
+
+  <div class="year-display" id="mainDisplay">
+    <div class="year-value" id="year">1880</div>
+    <div class="month-value" id="month">JAN</div>
+  </div>
+
+  <div class="temp-display">
+    <div class="temp-value" id="temp">-0.19°C</div>
+  </div>
+
+  <div class="live-indicator">
+    <div class="live-dot" id="liveDot"></div>
+    <span id="liveText">INITIALIZING...</span>
+  </div>
+
+  <div class="speed-control">
+    <button id="resetBtn" class="control-btn" title="Reset to beginning"><i class="fas fa-redo"></i></button>
+    <div class="slider-wrapper">
+      <label for="speedRange">SPEED</label>
+      <input type="range" id="speedRange" min="0.1" max="2.0" step="0.025" value="0.75">
+    </div>
+    <button id="playPauseBtn" class="control-btn" title="Pause/Play"><i class="fas fa-pause"></i></button>
+  </div>
+
+  <button id="infoBtn" class="info-btn">?</button>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <button id="closeBtn" class="close-btn">&times;</button>
+    <h2>What is this?</h2>
+    <p>
+      I put this together to visualize raw <a href="https://data.giss.nasa.gov/gistemp/" target="_blank">NASA GISTEMP</a> data. It basically turns 140+ years of climate anomalies into a particle system. It starts pretty chill and gets... well, you'll see.
+    </p>
+    <p>
+      Data: <a href="https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv" target="_blank">Global Temperature Anomalies</a> (updated monthly)
+    </p>
+    <p>
+      This is <a href="https://lukesteuber.com" target="_blank">me</a>.
+      <br>
+      Here are some <a href="https://dr.eamer.dev/datavis" target="_blank">more</a>.
+    </p>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
