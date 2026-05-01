@@ -9,7 +9,7 @@ NASA GISTEMP global temperature anomaly data from 1880 to 2025, rendered as a pa
 
 Each monthly temperature reading spawns particles whose color and physics are driven by the anomaly value for that month. Cool anomalies produce slow, blue-tinted particles that drift downward. Warm anomalies produce fast, orange-to-red particles that surge upward. The current year and temperature reading are displayed large in the center.
 
-The animation plays forward through 140+ years of data. You can control the speed, pause to examine a specific period, or reset to 1880 and watch it unfold again. The shift from the pre-1950 baseline to the 2000s–2020s is obvious — and it gets more obvious as the particle behavior changes.
+The animation plays forward through 140+ years of data. You can control the speed, pause to examine a specific period, or reset to 1880 and watch it unfold again. The shift from the pre-1950 baseline to the 2000s–2020s is obvious, and it gets more obvious as the particle behavior changes.
 
 ## Color encoding
 
@@ -57,7 +57,7 @@ curl -s "https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts+dSST.csv" > nasa
 ## Data source
 
 [NASA GISS Surface Temperature Analysis (GISTEMP v4)](https://data.giss.nasa.gov/gistemp/)
-Dataset: `GLB.Ts+dSST.csv` — global mean surface temperature anomalies, monthly, 1880–present.
+Dataset: `GLB.Ts+dSST.csv`, global mean surface temperature anomalies, monthly, 1880–present.
 
 ## Running locally
 
@@ -70,7 +70,7 @@ Opening `index.html` directly may hit CORS restrictions on the CSV. Use the serv
 
 ## Author
 
-Luke Steuber — [lukesteuber.com](https://lukesteuber.com) — [@lukesteuber.com](https://bsky.app/profile/lukesteuber.com) on Bluesky
+Luke Steuber · [lukesteuber.com](https://lukesteuber.com) · [@lukesteuber.com](https://bsky.app/profile/lukesteuber.com) on Bluesky
 
 Part of the [data poems collection](https://dr.eamer.dev/datavis/poems/) at dr.eamer.dev.
 
